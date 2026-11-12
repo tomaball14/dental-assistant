@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Front Desk Assistant</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f6f4ef; --surface: #ffffff; --ink: #1d2523; --muted: #5f6b67; --line: #e4e0d7;
+  --accent: #0f5c56; --accent-ink: #ffffff; --accent-soft: #e2efec;
+  --ok: #1f7a4a; --ok-bg: #e5f4ea; --warn: #9a5b00; --warn-bg: #fdf0d9; --bad: #a62b20; --bad-bg: #fbe4e1;
+  --radius: 14px; --shadow: 0 1px 2px rgba(29,37,35,.06), 0 4px 16px rgba(29,37,35,.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #121615; --surface: #1b2120; --ink: #e9ecea; --muted: #9aa5a1; --line: #2c3432;
+    --accent: #5fbfb5; --accent-ink: #0d1514; --accent-soft: #1f3330;
+    --ok: #6fd39a; --ok-bg: #173023; --warn: #f0b75a; --warn-bg: #33270f; --bad: #f08a80; --bad-bg: #3a1d1a;
+    --shadow: none;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
+header { padding: 20px 16px 8px; max-width: 880px; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+h1 { font: 600 24px/1.1 Fraunces, Georgia, serif; margin: 0; letter-spacing: -.01em; }
+.mode { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
+nav { max-width: 880px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 6px; position: sticky; top: 0; background: var(--bg); z-index: 2; }
+nav button { flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px; border-radius: 10px; font: 500 14px Inter, sans-serif; cursor: pointer; }
+nav button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+main { max-width: 880px; margin: 0 auto; padding: 8px 16px 48px; }
+section[hidden] { display: none; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px; }
+.day { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 2px 8px; }
+.appt { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: start; }
+.time { font-weight: 600; font-variant-numeric: tabular-nums; }
+.who { font-weight: 600; }
+.sub { color: var(--muted); font-size: 13px; }
+.chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 6px; }
+.chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.warn { color: var(--warn); background: var(--warn-bg); } .chip.bad { color: var(--bad); background: var(--bad-bg); }
+.pt { text-align: right; } .pt b { font-size: 17px; font-variant-numeric: tabular-nums; } .pt .sub { font-size: 12px; }
+.summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
+.stat { flex: 1; min-width: 120px; } .stat b { display: block; font: 600 22px Fraunces, Georgia, serif; }
+label { display: block; font-size: 13px; font-weight: 500; margin: 10px 0 4px; }
+input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: 15px Inter, sans-serif; }
+.row { display: grid; grid-template-columns: 1.2fr .8fr .8fr 36px; gap: 6px; margin-bottom: 6px; align-items: center; }
+.btn { border: 0; background: var(--accent); color: var(--accent-ink); padding: 10px 16px; border-radius: 10px; font: 600 14px Inter, sans-serif; cursor: pointer; }
+.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
+.x { border: 0; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
+th { font-size: 12px; color: var(--muted); font-weight: 600; } td.n, th.n { text-align: right; }
+tfoot td { font-weight: 600; border-bottom: 0; }
+.warns { color: var(--warn); font-size: 13px; margin: 8px 0 0; padding-left: 18px; }
+.chat { display: flex; flex-direction: column; gap: 8px; min-height: 240px; }
+.msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; }
+.msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
+.msg.bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.composer { display: flex; gap: 8px; margin-top: 12px; position: sticky; bottom: 12px; }
+.suggest { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.suggest button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+.empty, .err { color: var(--muted); padding: 24px 4px; text-align: center; }
+.err { color: var(--bad); }
+.foot { color: var(--muted); font-size: 12px; margin-top: 18px; }
+@media (max-width: 520px) { .appt { grid-template-columns: 52px 1fr; } .pt { grid-column: 2; text-align: left; } .row { grid-template-columns: 1fr 70px 70px 28px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Front Desk Assistant</h1>
+  <span class="mode" id="mode">…</span>
+</header>
+<nav role="tablist">
+  <button role="tab" aria-selected="true" data-tab="schedule">Schedule</button>
+  <button role="tab" aria-selected="false" data-tab="estimate">Estimate</button>
+  <button role="tab" aria-selected="false" data-tab="assistant">Ask</button>
+</nav>
+<main>
+  <section id="schedule">
+    <div class="card summary-row" id="stats"></div>
+    <div id="appts"><p class="empty">Checking insurance for upcoming patients…</p></div>
+  </section>
+
+  <section id="estimate" hidden>
+    <div class="card">
+      <label for="patient">Patient</label>
+      <select id="patient"></select>
+      <label>Treatment</label>
+      <div id="procs"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn ghost" id="addProc" type="button">+ Add code</button>
+        <button class="btn" id="runEst" type="button">Estimate</button>
+      </div>
+      <p class="sub" style="margin:8px 0 0">Leave fee blank to use the office fee schedule.</p>
+    </div>
+    <div id="estOut"></div>
+  </section>
+
+  <section id="assistant" hidden>
+    <div class="suggest">
+      <button>Who needs attention tomorrow?</button>
+      <button>Is Marcus Hale covered for a crown?</button>
+      <button>Estimate D3330, D2950, D2750 for Rosa Jennings</button>
+    </div>
+    <div class="chat" id="chat"></div>
+    <form class="composer" id="askForm">
+      <input id="askInput" autocomplete="off" placeholder="Ask about a patient, coverage or cost…">
+      <button class="btn">Send</button>
+    </form>
+  </section>
+  <p class="foot">Estimates are based on real-time eligibility and office fees. The insurance company makes the final determination.</p>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const money = (c) => c == null ? '—' : '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+let accessCode = '';
+try { accessCode = sessionStorage.getItem('ac') || ''; } catch {}
+
+async function api(path, body) {
+  const opts = { headers: { 'x-access-code': accessCode } };
+  if (body) { opts.method = 'POST'; opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  const r = await fetch(path, opts);
+  if (r.status === 401) {
+    const c = prompt('Enter the office access code');
+    if (!c) throw new Error('Access code required');
+    accessCode = c; try { sessionStorage.setItem('ac', c); } catch {}
+    return api(path, body);
+  }
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || 'Request failed');
+  return j;
+}
+
+// Tabs
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('main section').forEach((s) => s.hidden = s.id !== b.dataset.tab);
+}));
+
+function chip(flags, summary) {
+  const cls = flags.some((f) => ['inactive', 'check_failed', 'not_found'].includes(f)) ? 'bad'
+    : flags.some((f) => ['low_max', 'unclear', 'no_insurance'].includes(f)) ? 'warn' : 'ok';
+  return `<span class="chip ${cls}">${esc(summary)}</span>`;
+}
+
+// Schedule
+let patients = new Map();
+async function loadSchedule() {
+  try {
+    const { appointments } = await api('/api/schedule?days=2');
+    const byDay = {};
+    for (const a of appointments) {
+      (byDay[a.date] ||= []).push(a);
+      if (a.patient) patients.set(a.patientId, { a, name: a.patient.name });
+    }
+    const flagged = appointments.filter((a) => a.flags.some((f) => f !== 'assumed_percentages'));
+    const due = appointments.reduce((s, a) => s + a.estimate.patient, 0);
+    $('#stats').innerHTML = `
+      <div class="stat"><span class="sub">Appointments</span><b>${appointments.length}</b></div>
+      <div class="stat"><span class="sub">Need attention</span><b style="color:var(${flagged.length ? '--bad' : '--ok'})">${flagged.length}</b></div>
+      <div class="stat"><span class="sub">Est. patient portions</span><b>${money(due)}</b></div>`;
+    $('#appts').innerHTML = Object.entries(byDay).map(([d, list]) => `
+      <div class="day">${new Date(d + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
+      ${list.map((a) => `
+        <div class="card appt">
+          <div class="time">${esc(a.time)}</div>
+          <div>
+            <div class="who">${esc(a.patient?.name || 'Unknown patient')}</div>
+            <div class="sub">${esc(a.patient?.payer || 'No insurance on file')} · ${esc(a.procedures.map((p) => p.code).join(', '))}</div>
+            ${chip(a.flags, a.summary)}
+          </div>
+          <div class="pt"><b>${money(a.estimate.patient)}</b><div class="sub">est. patient</div></div>
+        </div>`).join('')}`).join('') || '<p class="empty">No upcoming appointments.</p>';
+    fillPatients(appointments);
+  } catch (e) { $('#appts').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
+}
+
+// Estimate
+function fillPatients(appts) {
+  $('#patient').innerHTML = [...patients.entries()].map(([id, p]) => `<option value="${esc(id)}">${esc(p.name)}</option>`).join('');
+  loadProcsFor($('#patient').value);
+}
+function procRow(p = {}) {
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = `<input placeholder="Code (D2740)" value="${esc(p.code || '')}" data-k="code">
+    <input placeholder="Tooth" value="${esc(p.tooth || '')}" data-k="tooth">
+    <input placeholder="Fee $" inputmode="decimal" data-k="fee">
+    <button class="x" type="button" aria-label="Remove">×</button>`;
+  d.querySelector('.x').onclick = () => d.remove();
+  $('#procs').appendChild(d);
+}
+function loadProcsFor(id) {
+  $('#procs').innerHTML = '';
+  const p = patients.get(id);
+  (p?.a.procedures || [{}]).forEach(procRow);
+}
+$('#patient').addEventListener('change', (e) => loadProcsFor(e.target.value));
+$('#addProc').onclick = () => procRow();
+$('#runEst').onclick = async () => {
+  const procedures = [...document.querySelectorAll('#procs .row')].map((r) => {
+    const o = {}; r.querySelectorAll('input').forEach((i) => o[i.dataset.k] = i.value.trim()); return o;
+  }).filter((p) => p.code);
+  $('#estOut').innerHTML = '<p class="empty">Checking benefits…</p>';
+  try {
+    const r = await api('/api/estimate', { patientId: $('#patient').value, procedures });
+    const e = r.estimate;
+    $('#estOut').innerHTML = `<div class="card">
+      <div class="who">${esc(r.patient?.name)}</div>${chip(r.flags, r.summary)}
+      <table style="margin-top:10px"><thead><tr><th>Procedure</th><th class="n">Fee</th><th class="n">Insurance</th><th class="n">Patient</th></tr></thead>
+      <tbody>${e.lines.map((l) => `<tr><td>${esc(l.code)} <span class="sub">${esc(l.name)}${l.tooth ? ' #' + esc(l.tooth) : ''}</span></td><td class="n">${money(l.fee)}</td><td class="n">${money(l.insurance)}</td><td class="n">${money(l.patient)}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td>Total</td><td class="n">${money(e.totals.fee)}</td><td class="n">${money(e.totals.insurance)}</td><td class="n">${money(e.totals.patient)}</td></tr></tfoot></table>
+      ${e.warnings.length ? `<ul class="warns">${e.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
+      <label>Text for the patient</label><textarea rows="6" id="ptText">${esc(r.patientText)}</textarea>
+      <button class="btn ghost" style="margin-top:8px" type="button" id="copyTxt">Copy</button>
+    </div>`;
+    $('#copyTxt').onclick = () => navigator.clipboard?.writeText($('#ptText').value);
+  } catch (err) { $('#estOut').innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+};
+
+// Assistant
+const history = [];
+function bubble(text, who) { const d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = text; $('#chat').appendChild(d); d.scrollIntoView({ block: 'end' }); return d; }
+async function send(q) {
+  if (!q) return;
+  bubble(q, 'me'); const wait = bubble('…', 'bot');
+  try { const { reply } = await api('/api/assistant', { message: q, history }); wait.textContent = reply; history.push({ role: 'user', content: q }, { role: 'assistant', content: reply }); }
+  catch (e) { wait.textContent = e.message; }
+}
+$('#askForm').onsubmit = (e) => { e.preventDefault(); const q = $('#askInput').value.trim(); $('#askInput').value = ''; send(q); };
+document.querySelectorAll('.suggest button').forEach((b) => b.onclick = () => send(b.textContent));
+
+fetch('/api/health').then((r) => r.json()).then((h) => {
+  $('#mode').textContent = h.mode === 'live' ? 'Live data' : 'Demo practice';
+}).catch(() => {});
+loadSchedule();
+</script>
+</body>
+</html>
