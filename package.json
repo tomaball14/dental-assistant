@@ -4,8 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Front-desk AI assistant for dental offices: real-time insurance verification, patient estimates, and a texting assistant.",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
+    "start": "node scripts/dev.js --office",
     "dev": "node scripts/dev.js",
     "test": "node --test test/*.test.js"
   }

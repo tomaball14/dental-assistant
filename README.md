@@ -18,6 +18,24 @@ npm run dev       # http://localhost:3000, fictional demo practice
 
 With no environment variables set, the app runs in **demo mode** with six fictional patients. They cover the main scenarios: active, deductible not met, low max, inactive, self-pay, and bad member ID.
 
+## Use your own practice's schedule (Eaglesoft)
+
+1. In Eaglesoft, go to **Reports**, open the **Scheduler** tab, and run an appointment list for tomorrow. Export it as Excel or CSV. Include patient name, birth date, date, time, procedure codes, tooth, fee, primary insurance, payer ID, subscriber ID, and cell phone where the report allows.
+2. In the chat, tap the **paperclip** and pick the file. The assistant shows which columns it matched. Use **Fix columns** if anything is off, then tap **Use this schedule**.
+3. Optional: upload your Eaglesoft fee schedule the same way, so estimates use your real fees.
+
+Without a Stedi key, the assistant still works from your schedule but says that coverage isn't checked yet. Add `STEDI_API_KEY` and `PROVIDER_NPI` to turn on real-time eligibility. Add `PAYER_MAP_JSON` (for example `{"Delta Dental of Virginia":"DDVA1"}`) if your export has carrier names but no payer IDs.
+
+### Run it on the office computer (recommended for real patient data)
+
+1. Install Node.js (LTS) from nodejs.org on the front-desk PC.
+2. Download this repo (Code → Download ZIP) and unzip it.
+3. Double-click **start.bat**. The window shows the address for that computer, the address for phones on the office Wi-Fi, and the office code.
+
+Uploaded data is saved only in the `data` folder on that computer. Keys go in a `.env` file next to `start.bat` (see `.env.example`).
+
+The hosted Vercel version refuses real patient uploads until `HIPAA_HOSTING_OK=true` is set, which you should only do after signing Vercel's BAA. The built-in sample works everywhere.
+
 ## Going live (checklist)
 
 1. **Sign BAAs first.** The data is PHI, so you need a Business Associate Agreement with every vendor that touches it before you switch to live data: Vercel (requires a plan with HIPAA support), Stedi, NexHealth, Anthropic (for the assistant), and Twilio (for SMS).

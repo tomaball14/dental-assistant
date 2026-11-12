@@ -141,6 +141,28 @@ form.compose { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-
 .lock .btn { width: 100%; }
 .lock .err { color: var(--red); min-height: 1.4em; font-size: 15px; }
 
+.attach { width: 44px; height: 44px; flex: none; border-radius: 50%; border: 1.5px solid var(--line); background: var(--surface); color: var(--soft); cursor: pointer; display: grid; place-items: center; }
+.attach svg { width: 20px; height: 20px; }
+.attach:hover { color: var(--blue); border-color: var(--blue); }
+
+/* What we read from an Eaglesoft export */
+.import { margin-top: 6px; width: min(400px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; }
+.import h3 { margin: 0 0 2px; font-size: 16px; }
+.import .meta { font-size: 14px; color: var(--soft); margin: 0 0 8px; }
+.import dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 14px; }
+.import dt { color: var(--soft); }
+.import dd { margin: 0; overflow-wrap: anywhere; }
+.import dd.none { color: var(--red); }
+.import .warn { margin: 10px 0 0; font-size: 14px; color: var(--red); }
+.import .where { margin: 10px 0 0; font-size: 13px; color: var(--soft); }
+.import details { margin-top: 10px; font-size: 14px; }
+.import summary { cursor: pointer; color: var(--blue); font-weight: 700; padding: 4px 0; }
+.import label { display: block; margin-top: 8px; color: var(--soft); }
+.import select { width: 100%; margin-top: 2px; padding: 8px 10px; border: 1.5px solid var(--line); border-radius: 10px; background: var(--surface); font-size: 16px; }
+.import .row { display: flex; gap: 8px; margin-top: 12px; }
+.import .row .primary { flex: 1; }
+.import.done .row { display: none; }
+
 @media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
 </style>
 </head>
@@ -159,6 +181,10 @@ form.compose { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-
 <footer>
   <form class="compose" id="compose">
     <label for="q" class="sr" style="position:absolute;left:-9999px">Message</label>
+    <button class="attach" id="attachBtn" type="button" aria-label="Upload a schedule export from Eaglesoft">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.5 8.5a5 5 0 01-7-7L14 4.5a3.5 3.5 0 015 5l-8.5 8.5a2 2 0 01-3-3L15 7.5"/></svg>
+    </button>
+    <input type="file" id="file" accept=".csv,.txt,.tsv,.xlsx,.xls,text/csv" hidden>
     <textarea id="q" rows="1" placeholder="Message" autocomplete="off" enterkeyhint="send"></textarea>
     <button class="send" id="sendBtn" aria-label="Send" disabled>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -176,7 +202,9 @@ form.compose { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-
   </form>
 </div>
 
-<script>
+<script type="module">
+import { parseCSV, buildPracticeData, sampleExport, FIELDS, FIELD_LABEL } from './import.js';
+
 // Size the app to what's actually visible: handles mobile toolbars and the
 // on-screen keyboard (iOS doesn't shrink the layout viewport for it).
 (function fit() {
@@ -205,12 +233,16 @@ let code = store.get('code') || '';
 let history = [];   // text-only turns sent back for conversational memory
 let context = {};   // last patient + treatment, so follow-ups like "send it to her" work
 let busy = false;
+let dataMode = 'browser';        // 'server' on an office computer, else the browser keeps it
+let hostedOk = false;            // may real patient data be used on this deploy?
+let practiceData = store.get('practiceData');
 
 // ---------- network ----------
 let unlockWaiters = [];
 async function api(path, body) {
   const opts = { headers: { 'x-access-code': code } };
-  if (body) { opts.method = 'POST'; opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify(body); }
+  if (body && dataMode === 'browser' && practiceData && !body.imported) body = { ...body, practiceData };
+  if (body) { opts.method = body.method || 'POST'; opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify(body); }
   const r = await fetch(path, opts);
   if (r.status === 401) { await askForCode(); return api(path, body); }
   const j = await r.json().catch(() => ({}));
@@ -326,6 +358,8 @@ function showBot(r, shell) {
 async function ask(text, shown) {
   text = text.trim();
   if (!text || busy) return;
+  if (text === '__sample__') return useSample();
+  if (/^(clear|forget|remove|stop using) (my )?(data|upload|schedule|export)/i.test(text)) return clearData(shown || text);
   busy = true;
   addMine(shown || text);
   const shell = botShell();
@@ -355,16 +389,178 @@ $('#compose').onsubmit = (e) => {
   ask(t);
 };
 
+// ---------- your own practice data ----------
+let healthMode = 'demo';
+let serverLoaded = null;
+let pending = null; // an import waiting for "Use this schedule"
+
+function loadedInfo() {
+  if (dataMode === 'server') return serverLoaded;
+  if (!practiceData?.appointments) return null;
+  return { source: practiceData.source, fileName: practiceData.fileName, importedAt: practiceData.importedAt, appointments: practiceData.appointments.length };
+}
+function updateStatus() {
+  const info = loadedInfo();
+  const when = info?.importedAt ? new Date(info.importedAt).toLocaleString('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : '';
+  $('#status').textContent = info?.appointments
+    ? (info.source === 'sample' ? 'Sample export' : `Your schedule, uploaded ${when}`)
+    : healthMode === 'live' ? 'Connected to your schedule' : 'Demo practice';
+}
+async function brief() {
+  const shell = botShell();
+  try { showBot(await api('/api/brief', dataMode === 'browser' && practiceData ? {} : undefined), shell); }
+  catch (e) { showBot({ reply: e.message }, shell); }
+}
+
+$('#attachBtn').onclick = () => $('#file').click();
+$('#file').onchange = async (e) => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  if (!f) return;
+  addMine(`Attached ${f.name}`);
+  const shell = botShell();
+  try {
+    const rows = await readRows(f);
+    importRows(rows, f.name, 'upload', shell);
+  } catch (err) {
+    showBot({ reply: `I couldn't open that file. Save it from Eaglesoft as CSV and try again. (${err.message})` }, shell);
+  }
+};
+
+async function readRows(f) {
+  if (/\.(xlsx|xls)$/i.test(f.name)) {
+    if (!window.XLSX) await new Promise((res, rej) => {
+      const sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+      sc.onload = res; sc.onerror = () => rej(new Error('Excel reader did not load'));
+      document.head.appendChild(sc);
+    });
+    const wb = window.XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    const sheet = wb.Sheets[wb.SheetNames[0]];
+    return window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' })
+      .map((r) => r.map((v) => String(v).trim())).filter((r) => r.some((v) => v));
+  }
+  return parseCSV(await f.text());
+}
+
+function importRows(rows, fileName, source, shell, mapping) {
+  const r = buildPracticeData(rows, { fileName, source, mapping });
+  if (r.error) return showBot({ reply: r.error }, shell);
+  if (r.kind === 'fees') {
+    if (!r.report.fees) return showBot({ reply: 'That looks like a fee schedule, but I couldn\'t read any fees from it.' }, shell);
+    return saveImport({ kind: 'fees', fees: r.fees }, shell, `Got your fee schedule: ${r.report.fees} procedure fees. I'll use them for estimates.`);
+  }
+  pending = { rows, fileName, source, result: r };
+  showBot({ reply: '' }, shell);
+  shell.querySelector('.text').remove();
+  shell.appendChild(importCard(r, source));
+}
+
+const KEY_FIELDS = ['name', 'firstName', 'lastName', 'dob', 'date', 'time', 'codes', 'tooth', 'fee', 'carrier', 'payerId', 'memberId', 'subscriber', 'relationship', 'phone'];
+function importCard(r, source) {
+  const rep = r.report;
+  const el = document.createElement('div');
+  el.className = 'import';
+  const day = (d) => (d ? new Date(d + 'T12:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '?');
+  const range = rep.dateFrom === rep.dateTo ? day(rep.dateFrom) : `${day(rep.dateFrom)} to ${day(rep.dateTo)}`;
+  const shown = ['name', 'date', 'time', 'codes', 'carrier', 'memberId', 'payerId', 'dob', 'phone']
+    .filter((f) => !(f === 'name' && r.mapping.name == null && r.mapping.lastName != null));
+  const rowsHtml = shown.map((f) => {
+    const i = f === 'name' && r.mapping.name == null ? r.mapping.lastName : r.mapping[f];
+    return `<dt>${esc(FIELD_LABEL[f])}</dt><dd class="${i == null ? 'none' : ''}">${i == null ? 'not found' : esc(r.headers[i])}</dd>`;
+  }).join('');
+  const warns = [];
+  if (!rep.appointments) warns.push('I didn\'t find any appointments. Check the columns below.');
+  if (rep.missingPayerId) warns.push(`${rep.missingPayerId} insured patient${rep.missingPayerId > 1 ? 's have' : ' has'} no payer ID, so their insurance can't be checked automatically. Add a payer ID column to the report if Eaglesoft offers it.`);
+  if (rep.missingMemberId) warns.push(`${rep.missingMemberId} insured patient${rep.missingMemberId > 1 ? 's have' : ' has'} no subscriber ID.`);
+  if (rep.noProcedures) warns.push(`${rep.noProcedures} appointment${rep.noProcedures > 1 ? 's have' : ' has'} no procedures listed.`);
+  const where = dataMode === 'server'
+    ? 'Saved only on this office computer.'
+    : 'Kept only in this browser tab until you close it.';
+  const blocked = source !== 'sample' && dataMode === 'browser' && !hostedOk;
+  const opts = (sel) => `<option value="">Not in this file</option>` + r.headers.map((h, i) => `<option value="${i}" ${String(sel) === String(i) ? 'selected' : ''}>${esc(h || `Column ${i + 1}`)}</option>`).join('');
+  el.innerHTML = `
+    <h3>${source === 'sample' ? 'Sample export' : esc(pending.fileName)}</h3>
+    <p class="meta">${rep.appointments} appointments, ${rep.patients} patients, ${esc(range)}</p>
+    <dl>${rowsHtml}</dl>
+    ${warns.map((w) => `<p class="warn">${esc(w)}</p>`).join('')}
+    <details><summary>Fix columns</summary>
+      ${KEY_FIELDS.map((f) => `<label>${esc(FIELD_LABEL[f])}<select data-f="${f}">${opts(r.mapping[f])}</select></label>`).join('')}
+    </details>
+    ${blocked
+      ? `<p class="warn">This online version can't hold real patient records yet. Run the office-computer version (or turn on hosting after the HIPAA agreement), then upload again.</p>
+         <div class="row"><button class="btn quiet" type="button" data-a="cancel">OK</button></div>`
+      : `<p class="where">${where}</p>
+         <div class="row"><button class="btn primary" type="button" data-a="use">Use this schedule</button><button class="btn quiet" type="button" data-a="cancel">Cancel</button></div>`}`;
+  el.querySelectorAll('select').forEach((sel) => sel.onchange = () => {
+    const mapping = { ...pending.result.mapping };
+    el.querySelectorAll('select').forEach((s2) => { if (s2.value === '') delete mapping[s2.dataset.f]; else mapping[s2.dataset.f] = Number(s2.value); });
+    const holder = el.parentElement;
+    el.remove();
+    importRows(pending.rows, pending.fileName, pending.source, holder, mapping);
+    holder.querySelector('.import details').open = true;
+  });
+  el.querySelector('[data-a="cancel"]').onclick = () => { el.classList.add('done'); pending = null; };
+  const use = el.querySelector('[data-a="use"]');
+  if (use) use.onclick = async () => {
+    el.classList.add('done');
+    const r2 = pending.result;
+    pending = null;
+    await saveImport(r2.data, null, null);
+  };
+  return el;
+}
+
+async function saveImport(imported, shell, message) {
+  try {
+    if (dataMode === 'server') {
+      const r = await api('/api/practice-data', { imported });
+      serverLoaded = r.loaded;
+    } else {
+      practiceData = imported.kind === 'fees'
+        ? { ...(practiceData || { source: 'upload', patients: [], appointments: [] }), fees: imported.fees }
+        : { ...imported, fees: { ...(practiceData?.fees || {}), ...(imported.fees || {}) } };
+      store.set('practiceData', practiceData);
+    }
+    updateStatus();
+    context = {}; history = [];
+    if (message) showBot({ reply: message }, shell);
+    else await brief();
+  } catch (e) { showBot({ reply: e.message }, shell); }
+}
+
+function useSample() {
+  addMine('Try a sample export');
+  const shell = botShell();
+  importRows(parseCSV(sampleExport()), 'Sample export', 'sample', shell);
+}
+
+async function clearData(shown) {
+  addMine(shown);
+  if (dataMode === 'server') { try { await api('/api/practice-data', { method: 'DELETE' }); } catch {} serverLoaded = null; }
+  practiceData = null;
+  try { sessionStorage.removeItem('practiceData'); } catch {}
+  context = {}; history = [];
+  updateStatus();
+  showBot({ reply: 'Done. I\'ve forgotten the uploaded schedule.' });
+  await brief();
+}
+
 // ---------- start: the assistant speaks first ----------
 (async () => {
   try {
     const h = await fetch('/api/health').then((r) => r.json());
     if (h.practice) $('#practice').textContent = h.practice;
-    $('#status').textContent = h.mode === 'live' ? 'Connected to your schedule' : 'Demo practice';
+    healthMode = h.mode;
   } catch { $('#status').textContent = 'Offline'; }
-  const shell = botShell();
-  try { showBot(await api('/api/brief'), shell); }
-  catch (e) { showBot({ reply: e.message }, shell); }
+  try {
+    const pd = await api('/api/practice-data');
+    dataMode = pd.mode; hostedOk = pd.hostedRealDataAllowed;
+    if (dataMode === 'server') practiceData = null;
+    serverLoaded = pd.loaded;
+  } catch {}
+  updateStatus();
+  await brief();
 })();
 </script>
 </body>
