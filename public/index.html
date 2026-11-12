@@ -2,243 +2,337 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#F6F8FA">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Front Desk Assistant</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #f6f4ef; --surface: #ffffff; --ink: #1d2523; --muted: #5f6b67; --line: #e4e0d7;
-  --accent: #0f5c56; --accent-ink: #ffffff; --accent-soft: #e2efec;
-  --ok: #1f7a4a; --ok-bg: #e5f4ea; --warn: #9a5b00; --warn-bg: #fdf0d9; --bad: #a62b20; --bad-bg: #fbe4e1;
-  --radius: 14px; --shadow: 0 1px 2px rgba(29,37,35,.06), 0 4px 16px rgba(29,37,35,.05);
+  --paper: #F6F8FA; --surface: #FFFFFF; --ink: #16233B; --soft: #5A6680; --line: #DDE3EA;
+  --red: #C4322A; --red-wash: #FBEAE8; --blue: #2457C9; --blue-ink: #FFFFFF; --blue-wash: #E8EEFB;
+  --green: #1E7A4C;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #121615; --surface: #1b2120; --ink: #e9ecea; --muted: #9aa5a1; --line: #2c3432;
-    --accent: #5fbfb5; --accent-ink: #0d1514; --accent-soft: #1f3330;
-    --ok: #6fd39a; --ok-bg: #173023; --warn: #f0b75a; --warn-bg: #33270f; --bad: #f08a80; --bad-bg: #3a1d1a;
-    --shadow: none;
+    --paper: #0F1522; --surface: #18202F; --ink: #E7ECF4; --soft: #9BA6BB; --line: #2A3447;
+    --red: #F07B72; --red-wash: #3A1E22; --blue: #6F9BFF; --blue-ink: #0F1522; --blue-wash: #1D2B48; --green: #6FD39C;
   }
 }
+:root[data-theme="dark"] {
+  --paper: #0F1522; --surface: #18202F; --ink: #E7ECF4; --soft: #9BA6BB; --line: #2A3447;
+  --red: #F07B72; --red-wash: #3A1E22; --blue: #6F9BFF; --blue-ink: #0F1522; --blue-wash: #1D2B48; --green: #6FD39C;
+}
 * { box-sizing: border-box; }
-html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 Inter, system-ui, sans-serif; }
-header { padding: 20px 16px 8px; max-width: 880px; margin: 0 auto; display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-h1 { font: 600 24px/1.1 Fraunces, Georgia, serif; margin: 0; letter-spacing: -.01em; }
-.mode { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; }
-nav { max-width: 880px; margin: 0 auto; padding: 8px 16px; display: flex; gap: 6px; position: sticky; top: 0; background: var(--bg); z-index: 2; }
-nav button { flex: 1; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 10px; border-radius: 10px; font: 500 14px Inter, sans-serif; cursor: pointer; }
-nav button[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
-main { max-width: 880px; margin: 0 auto; padding: 8px 16px 48px; }
-section[hidden] { display: none; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; margin-bottom: 10px; }
-.day { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 2px 8px; }
-.appt { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: start; }
-.time { font-weight: 600; font-variant-numeric: tabular-nums; }
-.who { font-weight: 600; }
-.sub { color: var(--muted); font-size: 13px; }
-.chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; margin-top: 6px; }
-.chip.ok { color: var(--ok); background: var(--ok-bg); } .chip.warn { color: var(--warn); background: var(--warn-bg); } .chip.bad { color: var(--bad); background: var(--bad-bg); }
-.pt { text-align: right; } .pt b { font-size: 17px; font-variant-numeric: tabular-nums; } .pt .sub { font-size: 12px; }
-.summary-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 4px 0 6px; }
-.stat { flex: 1; min-width: 120px; } .stat b { display: block; font: 600 22px Fraunces, Georgia, serif; }
-label { display: block; font-size: 13px; font-weight: 500; margin: 10px 0 4px; }
-input, select, textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); font: 15px Inter, sans-serif; }
-.row { display: grid; grid-template-columns: 1.2fr .8fr .8fr 36px; gap: 6px; margin-bottom: 6px; align-items: center; }
-.btn { border: 0; background: var(--accent); color: var(--accent-ink); padding: 10px 16px; border-radius: 10px; font: 600 14px Inter, sans-serif; cursor: pointer; }
-.btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--line); }
-.x { border: 0; background: transparent; color: var(--muted); font-size: 20px; cursor: pointer; }
-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-th, td { text-align: left; padding: 8px 4px; border-bottom: 1px solid var(--line); font-size: 14px; }
-th { font-size: 12px; color: var(--muted); font-weight: 600; } td.n, th.n { text-align: right; }
-tfoot td { font-weight: 600; border-bottom: 0; }
-.warns { color: var(--warn); font-size: 13px; margin: 8px 0 0; padding-left: 18px; }
-.chat { display: flex; flex-direction: column; gap: 8px; min-height: 240px; }
-.msg { max-width: 85%; padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; }
-.msg.me { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 4px; }
-.msg.bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
-.composer { display: flex; gap: 8px; margin-top: 12px; position: sticky; bottom: 12px; }
-.suggest { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
-.suggest button { border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
-.empty, .err { color: var(--muted); padding: 24px 4px; text-align: center; }
-.err { color: var(--bad); }
-.foot { color: var(--muted); font-size: 12px; margin-top: 18px; }
-@media (max-width: 520px) { .appt { grid-template-columns: 52px 1fr; } .pt { grid-column: 2; text-align: left; } .row { grid-template-columns: 1fr 70px 70px 28px; } }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--paper); color: var(--ink);
+  font: 17px/1.45 "Atkinson Hyperlegible", system-ui, sans-serif;
+  display: flex; flex-direction: column;
+}
+button, input, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; border-radius: 6px; }
+
+header {
+  padding: max(12px, env(safe-area-inset-top)) 16px 10px;
+  border-bottom: 1px solid var(--line); background: var(--paper);
+}
+.bar { max-width: 640px; margin: 0 auto; display: flex; align-items: center; gap: 10px; }
+.avatar {
+  width: 36px; height: 36px; border-radius: 50%; background: var(--blue); color: var(--blue-ink);
+  display: grid; place-items: center; flex: none;
+}
+.avatar svg { width: 20px; height: 20px; }
+.who { line-height: 1.2; }
+.who b { display: block; font-size: 17px; }
+.who span { font-size: 13px; color: var(--soft); }
+.who span::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: 1px; }
+
+#log { flex: 1; overflow-y: auto; padding: 16px 16px 8px; }
+.thread { max-width: 640px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; }
+
+.msg { max-width: 88%; overflow-wrap: anywhere; }
+.msg.me, .msg.bot .text { white-space: pre-wrap; }
+.msg.me {
+  align-self: flex-end; background: var(--blue); color: var(--blue-ink);
+  padding: 9px 14px; border-radius: 20px 20px 6px 20px;
+}
+.msg.bot { align-self: flex-start; padding: 2px 2px; }
+.msg.bot .text { padding: 10px 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 20px 20px 20px 6px; }
+.msg.bot .text:empty { display: none; }
+.msg.bot .text .flag { display: block; padding-left: 16px; position: relative; margin: 4px 0; }
+.msg.bot .text .flag::before { content: ""; position: absolute; left: 2px; top: .55em; width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+.typing span { display: inline-block; width: 7px; height: 7px; margin: 0 2px; border-radius: 50%; background: var(--soft); animation: blink 1.2s infinite both; }
+.typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes blink { 0%, 80%, 100% { opacity: .25 } 40% { opacity: 1 } }
+
+/* Estimate: the one loud thing on the screen */
+.est { margin-top: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; width: min(420px, 100%); }
+.est-top { padding: 14px 16px 12px; }
+.est-name { font-size: 14px; color: var(--soft); }
+.est-total { font-size: 44px; font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; margin: 6px 0 4px; }
+.est-total small { font-size: 15px; font-weight: 400; letter-spacing: 0; color: var(--soft); margin-left: 6px; }
+.est-ins { font-size: 15px; color: var(--soft); }
+.est-lines { list-style: none; margin: 0; padding: 4px 16px; border-top: 1px dashed var(--line); }
+.est-lines li { display: flex; align-items: baseline; gap: 8px; padding: 7px 0; font-size: 15px; }
+.est-lines li + li { border-top: 1px solid var(--line); }
+.tooth { flex: none; font-size: 12px; font-weight: 700; min-width: 30px; text-align: center; padding: 1px 6px; border-radius: 999px; border: 1.5px solid var(--ink); }
+.est-lines .nm { flex: 1; }
+.est-lines .amt { font-variant-numeric: tabular-nums; font-weight: 700; }
+.est-note { margin: 0; padding: 10px 16px 12px; font-size: 14px; color: var(--red); background: var(--red-wash); }
+
+/* Draft text the patient will receive */
+.draft { margin-top: 8px; width: min(420px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; }
+.draft h3 { margin: 0; font-size: 16px; }
+.draft .to { font-size: 14px; color: var(--soft); margin: 2px 0 10px; }
+.draft textarea {
+  width: 100%; min-height: 120px; resize: vertical; border: 0; padding: 10px 12px;
+  background: var(--blue-wash); border-radius: 14px 14px 14px 4px; line-height: 1.4; font-size: 16px;
+}
+.draft .row { display: flex; gap: 8px; margin-top: 10px; }
+.btn { border: 0; border-radius: 12px; padding: 11px 18px; font-weight: 700; cursor: pointer; }
+.btn.primary { background: var(--blue); color: var(--blue-ink); }
+.btn.quiet { background: transparent; color: var(--soft); }
+.btn:disabled { opacity: .5; cursor: default; }
+.draft.done { opacity: .7; }
+
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.chip {
+  border: 1.5px solid var(--blue); background: transparent; color: var(--blue);
+  border-radius: 999px; padding: 7px 14px; font-size: 15px; font-weight: 700; cursor: pointer; text-align: left;
+}
+.chip:hover { background: var(--blue-wash); }
+
+footer { border-top: 1px solid var(--line); background: var(--paper); padding: 10px 16px max(10px, env(safe-area-inset-bottom)); }
+form.compose { max-width: 640px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+#q {
+  flex: 1; resize: none; max-height: 140px; min-height: 46px; padding: 11px 16px; line-height: 1.4;
+  border: 1.5px solid var(--line); border-radius: 23px; background: var(--surface);
+}
+#q:focus { border-color: var(--blue); outline: none; }
+.send { width: 46px; height: 46px; flex: none; border-radius: 50%; border: 0; background: var(--blue); color: var(--blue-ink); cursor: pointer; display: grid; place-items: center; }
+.send svg { width: 20px; height: 20px; }
+.send:disabled { opacity: .4; }
+
+.lock { position: fixed; inset: 0; background: var(--paper); display: grid; place-items: center; padding: 24px; z-index: 5; }
+.lock[hidden] { display: none; }
+.lock form { width: min(340px, 100%); }
+.lock h2 { margin: 0 0 6px; font-size: 24px; }
+.lock p { margin: 0 0 16px; color: var(--soft); }
+.lock input { width: 100%; padding: 12px 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--surface); margin-bottom: 10px; font-size: 20px; letter-spacing: .1em; }
+.lock .btn { width: 100%; }
+.lock .err { color: var(--red); min-height: 1.4em; font-size: 15px; }
+
+@media (prefers-reduced-motion: reduce) { .typing span { animation: none; opacity: .6; } }
 </style>
 </head>
 <body>
 <header>
-  <h1>Front Desk Assistant</h1>
-  <span class="mode" id="mode">…</span>
+  <div class="bar">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3.5c-1.6-1.2-4.3-1.6-6 0-2.2 2-1.4 5.6-.6 8.3.6 2 .9 4.6 1.6 6.6.5 1.4 1.9 1.6 2.5.2.6-1.5.7-3.6 2.5-3.6s1.9 2.1 2.5 3.6c.6 1.4 2 1.2 2.5-.2.7-2 1-4.6 1.6-6.6.8-2.7 1.6-6.3-.6-8.3-1.7-1.6-4.4-1.2-6 0z"/></svg>
+    </div>
+    <div class="who"><b id="practice">Front Desk Assistant</b><span id="status">Connecting</span></div>
+  </div>
 </header>
-<nav role="tablist">
-  <button role="tab" aria-selected="true" data-tab="schedule">Schedule</button>
-  <button role="tab" aria-selected="false" data-tab="estimate">Estimate</button>
-  <button role="tab" aria-selected="false" data-tab="assistant">Ask</button>
-</nav>
-<main>
-  <section id="schedule">
-    <div class="card summary-row" id="stats"></div>
-    <div id="appts"><p class="empty">Checking insurance for upcoming patients…</p></div>
-  </section>
 
-  <section id="estimate" hidden>
-    <div class="card">
-      <label for="patient">Patient</label>
-      <select id="patient"></select>
-      <label>Treatment</label>
-      <div id="procs"></div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn ghost" id="addProc" type="button">+ Add code</button>
-        <button class="btn" id="runEst" type="button">Estimate</button>
-      </div>
-      <p class="sub" style="margin:8px 0 0">Leave fee blank to use the office fee schedule.</p>
-    </div>
-    <div id="estOut"></div>
-  </section>
+<main id="log" aria-live="polite"><div class="thread" id="thread"></div></main>
 
-  <section id="assistant" hidden>
-    <div class="suggest">
-      <button>Who needs attention tomorrow?</button>
-      <button>Is Marcus Hale covered for a crown?</button>
-      <button>Estimate D3330, D2950, D2750 for Rosa Jennings</button>
-    </div>
-    <div class="chat" id="chat"></div>
-    <form class="composer" id="askForm">
-      <input id="askInput" autocomplete="off" placeholder="Ask about a patient, coverage or cost…">
-      <button class="btn">Send</button>
-    </form>
-  </section>
-  <p class="foot">Estimates are based on real-time eligibility and office fees. The insurance company makes the final determination.</p>
-</main>
+<footer>
+  <form class="compose" id="compose">
+    <label for="q" class="sr" style="position:absolute;left:-9999px">Message</label>
+    <textarea id="q" rows="1" placeholder="Message" autocomplete="off" enterkeyhint="send"></textarea>
+    <button class="send" id="sendBtn" aria-label="Send" disabled>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    </button>
+  </form>
+</footer>
+
+<div class="lock" id="lock" hidden>
+  <form id="lockForm">
+    <h2>Office code</h2>
+    <p>Enter the code your office uses for the assistant.</p>
+    <input id="code" type="password" inputmode="text" autocomplete="current-password" aria-label="Office code">
+    <div class="err" id="lockErr"></div>
+    <button class="btn primary">Unlock</button>
+  </form>
+</div>
 
 <script>
 const $ = (s) => document.querySelector(s);
-const money = (c) => c == null ? '—' : '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const thread = $('#thread');
+const log = $('#log');
+const money = (c) => '$' + Math.round((c || 0) / 100).toLocaleString('en-US');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-let accessCode = '';
-try { accessCode = sessionStorage.getItem('ac') || ''; } catch {}
 
+const store = {
+  get(k) { try { return JSON.parse(sessionStorage.getItem(k)); } catch { return null; } },
+  set(k, v) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch {} },
+};
+let code = store.get('code') || '';
+let history = [];   // text-only turns sent back for conversational memory
+let context = {};   // last patient + treatment, so follow-ups like "send it to her" work
+let busy = false;
+
+// ---------- network ----------
+let unlockWaiters = [];
 async function api(path, body) {
-  const opts = { headers: { 'x-access-code': accessCode } };
+  const opts = { headers: { 'x-access-code': code } };
   if (body) { opts.method = 'POST'; opts.headers['content-type'] = 'application/json'; opts.body = JSON.stringify(body); }
   const r = await fetch(path, opts);
-  if (r.status === 401) {
-    const c = prompt('Enter the office access code');
-    if (!c) throw new Error('Access code required');
-    accessCode = c; try { sessionStorage.setItem('ac', c); } catch {}
-    return api(path, body);
-  }
+  if (r.status === 401) { await askForCode(); return api(path, body); }
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || 'Request failed');
+  if (!r.ok) throw new Error(j.error || 'The assistant is unavailable. Check your connection and try again.');
   return j;
 }
-
-// Tabs
-document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
-  document.querySelectorAll('nav button').forEach((x) => x.setAttribute('aria-selected', x === b));
-  document.querySelectorAll('main section').forEach((s) => s.hidden = s.id !== b.dataset.tab);
-}));
-
-function chip(flags, summary) {
-  const cls = flags.some((f) => ['inactive', 'check_failed', 'not_found'].includes(f)) ? 'bad'
-    : flags.some((f) => ['low_max', 'unclear', 'no_insurance'].includes(f)) ? 'warn' : 'ok';
-  return `<span class="chip ${cls}">${esc(summary)}</span>`;
+function askForCode(message) {
+  $('#lock').hidden = false;
+  $('#lockErr').textContent = code ? 'That code didn\'t work.' : '';
+  $('#code').value = '';
+  $('#code').focus();
+  return new Promise((res) => unlockWaiters.push(res));
 }
-
-// Schedule
-let patients = new Map();
-async function loadSchedule() {
-  try {
-    const { appointments } = await api('/api/schedule?days=2');
-    const byDay = {};
-    for (const a of appointments) {
-      (byDay[a.date] ||= []).push(a);
-      if (a.patient) patients.set(a.patientId, { a, name: a.patient.name });
-    }
-    const flagged = appointments.filter((a) => a.flags.some((f) => f !== 'assumed_percentages'));
-    const due = appointments.reduce((s, a) => s + a.estimate.patient, 0);
-    $('#stats').innerHTML = `
-      <div class="stat"><span class="sub">Appointments</span><b>${appointments.length}</b></div>
-      <div class="stat"><span class="sub">Need attention</span><b style="color:var(${flagged.length ? '--bad' : '--ok'})">${flagged.length}</b></div>
-      <div class="stat"><span class="sub">Est. patient portions</span><b>${money(due)}</b></div>`;
-    $('#appts').innerHTML = Object.entries(byDay).map(([d, list]) => `
-      <div class="day">${new Date(d + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}</div>
-      ${list.map((a) => `
-        <div class="card appt">
-          <div class="time">${esc(a.time)}</div>
-          <div>
-            <div class="who">${esc(a.patient?.name || 'Unknown patient')}</div>
-            <div class="sub">${esc(a.patient?.payer || 'No insurance on file')} · ${esc(a.procedures.map((p) => p.code).join(', '))}</div>
-            ${chip(a.flags, a.summary)}
-          </div>
-          <div class="pt"><b>${money(a.estimate.patient)}</b><div class="sub">est. patient</div></div>
-        </div>`).join('')}`).join('') || '<p class="empty">No upcoming appointments.</p>';
-    fillPatients(appointments);
-  } catch (e) { $('#appts').innerHTML = `<p class="err">${esc(e.message)}</p>`; }
-}
-
-// Estimate
-function fillPatients(appts) {
-  $('#patient').innerHTML = [...patients.entries()].map(([id, p]) => `<option value="${esc(id)}">${esc(p.name)}</option>`).join('');
-  loadProcsFor($('#patient').value);
-}
-function procRow(p = {}) {
-  const d = document.createElement('div');
-  d.className = 'row';
-  d.innerHTML = `<input placeholder="Code (D2740)" value="${esc(p.code || '')}" data-k="code">
-    <input placeholder="Tooth" value="${esc(p.tooth || '')}" data-k="tooth">
-    <input placeholder="Fee $" inputmode="decimal" data-k="fee">
-    <button class="x" type="button" aria-label="Remove">×</button>`;
-  d.querySelector('.x').onclick = () => d.remove();
-  $('#procs').appendChild(d);
-}
-function loadProcsFor(id) {
-  $('#procs').innerHTML = '';
-  const p = patients.get(id);
-  (p?.a.procedures || [{}]).forEach(procRow);
-}
-$('#patient').addEventListener('change', (e) => loadProcsFor(e.target.value));
-$('#addProc').onclick = () => procRow();
-$('#runEst').onclick = async () => {
-  const procedures = [...document.querySelectorAll('#procs .row')].map((r) => {
-    const o = {}; r.querySelectorAll('input').forEach((i) => o[i.dataset.k] = i.value.trim()); return o;
-  }).filter((p) => p.code);
-  $('#estOut').innerHTML = '<p class="empty">Checking benefits…</p>';
-  try {
-    const r = await api('/api/estimate', { patientId: $('#patient').value, procedures });
-    const e = r.estimate;
-    $('#estOut').innerHTML = `<div class="card">
-      <div class="who">${esc(r.patient?.name)}</div>${chip(r.flags, r.summary)}
-      <table style="margin-top:10px"><thead><tr><th>Procedure</th><th class="n">Fee</th><th class="n">Insurance</th><th class="n">Patient</th></tr></thead>
-      <tbody>${e.lines.map((l) => `<tr><td>${esc(l.code)} <span class="sub">${esc(l.name)}${l.tooth ? ' #' + esc(l.tooth) : ''}</span></td><td class="n">${money(l.fee)}</td><td class="n">${money(l.insurance)}</td><td class="n">${money(l.patient)}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td>Total</td><td class="n">${money(e.totals.fee)}</td><td class="n">${money(e.totals.insurance)}</td><td class="n">${money(e.totals.patient)}</td></tr></tfoot></table>
-      ${e.warnings.length ? `<ul class="warns">${e.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul>` : ''}
-      <label>Text for the patient</label><textarea rows="6" id="ptText">${esc(r.patientText)}</textarea>
-      <button class="btn ghost" style="margin-top:8px" type="button" id="copyTxt">Copy</button>
-    </div>`;
-    $('#copyTxt').onclick = () => navigator.clipboard?.writeText($('#ptText').value);
-  } catch (err) { $('#estOut').innerHTML = `<p class="err">${esc(err.message)}</p>`; }
+$('#lockForm').onsubmit = (e) => {
+  e.preventDefault();
+  code = $('#code').value.trim();
+  if (!code) return;
+  store.set('code', code);
+  $('#lock').hidden = true;
+  unlockWaiters.splice(0).forEach((f) => f());
 };
 
-// Assistant
-const history = [];
-function bubble(text, who) { const d = document.createElement('div'); d.className = 'msg ' + who; d.textContent = text; $('#chat').appendChild(d); d.scrollIntoView({ block: 'end' }); return d; }
-async function send(q) {
-  if (!q) return;
-  bubble(q, 'me'); const wait = bubble('…', 'bot');
-  try { const { reply } = await api('/api/assistant', { message: q, history }); wait.textContent = reply; history.push({ role: 'user', content: q }, { role: 'assistant', content: reply }); }
-  catch (e) { wait.textContent = e.message; }
-}
-$('#askForm').onsubmit = (e) => { e.preventDefault(); const q = $('#askInput').value.trim(); $('#askInput').value = ''; send(q); };
-document.querySelectorAll('.suggest button').forEach((b) => b.onclick = () => send(b.textContent));
+// ---------- rendering ----------
+function scrollDown() { requestAnimationFrame(() => log.scrollTo({ top: log.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })); }
 
-fetch('/api/health').then((r) => r.json()).then((h) => {
-  $('#mode').textContent = h.mode === 'live' ? 'Live data' : 'Demo practice';
-}).catch(() => {});
-loadSchedule();
+function addMine(text) {
+  const d = document.createElement('div');
+  d.className = 'msg me';
+  d.textContent = text;
+  thread.appendChild(d);
+  scrollDown();
+}
+
+function botShell() {
+  const d = document.createElement('div');
+  d.className = 'msg bot';
+  d.innerHTML = '<div class="text"><span class="typing" aria-label="Thinking"><span></span><span></span><span></span></span></div>';
+  thread.appendChild(d);
+  scrollDown();
+  return d;
+}
+
+function formatReply(text) {
+  // Problem lines in the briefing get the chart-red treatment.
+  return esc(text).split('\n').map((line) =>
+    line.startsWith('• ') ? `<span class="flag">${line.slice(2)}</span>` : line).join('\n').replace(/<\/span>\n/g, '</span>');
+}
+
+function estimateCard(b) {
+  const lines = b.lines.map((l) => `<li>${l.tooth ? `<span class="tooth" aria-label="Tooth ${esc(l.tooth)}">#${esc(l.tooth)}</span>` : ''}<span class="nm">${esc(l.name)}</span><span class="amt">${money(l.patient)}</span></li>`).join('');
+  const notes = b.notes?.length ? `<p class="est-note">${b.notes.map(esc).join('<br>')}</p>` : '';
+  return `<div class="est" role="group" aria-label="Estimate for ${esc(b.patient)}">
+    <div class="est-top">
+      <div class="est-name">${esc(b.patient)} pays</div>
+      <div class="est-total">${money(b.totals.patient)}<small>estimated</small></div>
+      <div class="est-ins">Insurance pays ${money(b.totals.insurance)} of ${money(b.totals.fee)}</div>
+    </div>
+    <ul class="est-lines">${lines}</ul>${notes}
+  </div>`;
+}
+
+function draftCard(b, holder) {
+  const el = document.createElement('div');
+  el.className = 'draft';
+  el.innerHTML = `<h3>${esc(b.title)}</h3><div class="to">To ${esc(b.to)}</div>
+    <textarea aria-label="Message to patient">${esc(b.text)}</textarea>
+    <div class="row"><button class="btn primary" type="button">Send text</button><button class="btn quiet" type="button">Not now</button></div>`;
+  const [sendB, skipB] = el.querySelectorAll('button');
+  sendB.onclick = async () => {
+    sendB.disabled = skipB.disabled = true;
+    sendB.textContent = 'Sending';
+    try {
+      const r = await api('/api/confirm', { token: b.token, text: el.querySelector('textarea').value });
+      el.classList.add('done');
+      el.querySelector('textarea').readOnly = true;
+      el.querySelector('.row').innerHTML = '';
+      showBot(r);
+    } catch (e) { sendB.disabled = skipB.disabled = false; sendB.textContent = 'Send text'; showBot({ reply: e.message }); }
+  };
+  skipB.onclick = () => { el.classList.add('done'); el.querySelector('.row').innerHTML = '<span class="to">Not sent.</span>'; };
+  holder.appendChild(el);
+}
+
+function showBot(r, shell) {
+  const d = shell || botShell();
+  d.querySelector('.text').innerHTML = formatReply(r.reply || '');
+  for (const b of r.blocks || []) {
+    if (b.type === 'estimate') d.insertAdjacentHTML('beforeend', estimateCard(b));
+    if (b.type === 'confirm') draftCard(b, d);
+  }
+  // Only the newest answer keeps its quick replies.
+  thread.querySelectorAll('.chips').forEach((c) => c.remove());
+  if (r.actions?.length) {
+    const c = document.createElement('div');
+    c.className = 'chips';
+    r.actions.forEach((a) => {
+      const btn = document.createElement('button');
+      btn.className = 'chip'; btn.type = 'button'; btn.textContent = a.label;
+      btn.onclick = () => ask(a.prompt, a.label);
+      c.appendChild(btn);
+    });
+    d.appendChild(c);
+  }
+  if (r.context) context = r.context;
+  scrollDown();
+}
+
+// ---------- conversation ----------
+async function ask(text, shown) {
+  text = text.trim();
+  if (!text || busy) return;
+  busy = true;
+  addMine(shown || text);
+  const shell = botShell();
+  try {
+    const r = await api('/api/assistant', { message: text, history, context });
+    history.push({ role: 'user', content: text }, { role: 'assistant', content: r.reply || '' });
+    history = history.slice(-12);
+    showBot(r, shell);
+  } catch (e) {
+    showBot({ reply: e.message }, shell);
+  } finally { busy = false; }
+}
+
+const q = $('#q');
+q.addEventListener('input', () => {
+  q.style.height = 'auto';
+  q.style.height = Math.min(q.scrollHeight, 140) + 'px';
+  $('#sendBtn').disabled = !q.value.trim();
+});
+q.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); $('#compose').requestSubmit(); }
+});
+$('#compose').onsubmit = (e) => {
+  e.preventDefault();
+  const t = q.value;
+  q.value = ''; q.style.height = 'auto'; $('#sendBtn').disabled = true;
+  ask(t);
+};
+
+// ---------- start: the assistant speaks first ----------
+(async () => {
+  try {
+    const h = await fetch('/api/health').then((r) => r.json());
+    if (h.practice) $('#practice').textContent = h.practice;
+    $('#status').textContent = h.mode === 'live' ? 'Connected to your schedule' : 'Demo practice';
+  } catch { $('#status').textContent = 'Offline'; }
+  const shell = botShell();
+  try { showBot(await api('/api/brief'), shell); }
+  catch (e) { showBot({ reply: e.message }, shell); }
+})();
 </script>
 </body>
 </html>

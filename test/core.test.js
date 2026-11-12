@@ -5,6 +5,8 @@ import { parseEligibility, summarize, flags } from '../lib/benefits.js';
 import { estimate } from '../lib/estimate.js';
 import { schedule, estimateFor, verify } from '../lib/service.js';
 import { ask } from '../lib/assistant.js';
+import { parseTreatment } from '../lib/procedures.js';
+import { confirmAction } from '../lib/actions.js';
 import { validTwilioSignature } from '../api/sms.js';
 import { createHmac } from 'node:crypto';
 
@@ -105,10 +107,46 @@ test('verify unknown patient', async () => {
   assert.deepEqual(v.flags, ['not_found']);
 });
 
-test('keyword assistant answers without an API key', async () => {
-  assert.match(await ask('Who needs attention tomorrow?'), /need attention/);
-  assert.match(await ask('Is Marcus Hale covered for a crown?'), /Marcus Hale/);
-  assert.match(await ask('Estimate D3330 for Rosa Jennings'), /Est\. patient total/);
+test('plain-English treatment parsing', () => {
+  assert.deepEqual(parseTreatment('root canal, buildup and crown on 30'),
+    [{ code: 'D3330', tooth: 30 }, { code: 'D2950', tooth: 30 }, { code: 'D2740', tooth: 30 }]);
+  assert.deepEqual(parseTreatment('2 surface filling on 14 and a cleaning'),
+    [{ code: 'D2392', tooth: 14 }, { code: 'D1110', tooth: null }]);
+  assert.equal(parseTreatment('root canal on #8')[0].code, 'D3310');
+  assert.equal(parseTreatment('full mouth deep cleaning').length, 4);
+  assert.deepEqual(parseTreatment('D2740 on 19'), [{ code: 'D2740', tooth: null }]);
+});
+
+test('conversation: brief, estimate, follow-up text, confirm', async () => {
+  const brief = await ask('');
+  assert.match(brief.reply, /need attention/);
+  assert.ok(brief.actions.length >= 3);
+
+  const est = await ask('Is Marcus Hale covered for a crown?');
+  assert.match(est.reply, /^Yes, Marcus is covered/);
+  assert.equal(est.blocks[0].type, 'estimate');
+  assert.equal(est.blocks[0].totals.patient, 65000);
+
+  const draft = await ask('send it to him', [], est.context);
+  const card = draft.blocks[0];
+  assert.equal(card.type, 'confirm');
+  assert.match(card.text, /\$650/);
+  assert.ok(!card.to.includes('0102') || card.to.includes('•••0102'));
+
+  const done = await confirmAction(card.token, card.text);
+  assert.match(done.reply, /demo/);
+  assert.equal((await confirmAction(card.token + 'x', card.text)).done, undefined);
+});
+
+test('conversation: pronoun follow-up and coverage answers', async () => {
+  const r1 = await ask('what about rosa');
+  assert.match(r1.reply, /Rosa is covered/);
+  const r2 = await ask('how much will she owe for the next visit?', [], r1.context);
+  assert.match(r2.reply, /\$2,515/);
+  const r3 = await ask('is devon covered');
+  assert.match(r3.reply, /no longer active/);
+  const r4 = await ask('hello', [], r3.context);
+  assert.match(r4.reply, /I can check/);
 });
 
 test('Twilio signature check', () => {

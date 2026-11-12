@@ -35,7 +35,10 @@ export default async function handler(req, res) {
   }
 
   let reply;
-  try { reply = await ask(params.Body || ''); }
-  catch { reply = 'Sorry, I could not answer that right now.'; }
+  try {
+    const r = await ask(params.Body || '');
+    reply = r.reply;
+    if (r.blocks.some((b) => b.type === 'confirm')) reply += '\n\nOpen the app to review and send that text.';
+  } catch { reply = 'Sorry, I could not answer that right now.'; }
   send(res, 200, twiml(reply.slice(0, 1500)), { 'Content-Type': 'text/xml' });
 }
